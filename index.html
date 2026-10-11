@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#170f14">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
+<title>Kvíz: Rodinné právo ⚖️</title>
+<style>
+  :root{
+    --ink:#170f14;--card:rgba(36,23,31,.94);--border:rgba(255,255,255,.08);
+    --muted:#a8929d;--text:#f6eef2;
+    --primary:#b83a6b;--primary-deep:#8a2a50;--primary-light:#e58fb0;
+    --green:#2fa571;--redSoft:#e5695f;
+    --lib:#36b3c4;--con:#d9a441;--soc:#8a6ad8;--amber:#d9a441;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html{-webkit-text-size-adjust:100%;touch-action:manipulation;}
+  body{
+    font-family:'Outfit',system-ui,sans-serif;
+    color:var(--text);
+    min-height:100vh;min-height:100dvh;
+    display:flex;align-items:center;justify-content:center;
+    padding:20px;
+    padding-top:max(20px, env(safe-area-inset-top));
+    padding-bottom:max(20px, env(safe-area-inset-bottom));
+    padding-left:max(20px, env(safe-area-inset-left));
+    padding-right:max(20px, env(safe-area-inset-right));
+    background:#120b10;
+    background-image:
+      radial-gradient(640px 480px at 10% 10%, rgba(54,179,196,.13), transparent 62%),
+      radial-gradient(720px 520px at 94% 16%, rgba(138,106,216,.12), transparent 62%),
+      radial-gradient(620px 480px at 50% 110%, rgba(217,164,65,.10), transparent 62%);
+    overscroll-behavior-y:contain;
+  }
+  .container{
+    width:100%;max-width:720px;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:20px;
+    box-shadow:0 20px 60px rgba(0,0,0,.4);
+    overflow:hidden;
+  }
+  button{touch-action:manipulation;}
+  :focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
+  @media (prefers-reduced-motion:reduce){
+    *{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;}
+  }
+  /* ===== Header ===== */
+  .header{
+    padding:10px 32px;
+    background:rgba(0,0,0,.15);
+    border-bottom:1px solid var(--border);
+    display:flex;align-items:center;justify-content:space-between;
+    position:sticky;top:0;z-index:30;
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+  }
+  .header-badges{
+    display:flex;align-items:center;gap:10px;
+    position:relative;
+  }
+  .score-badge{
+    background:rgba(255,255,255,.04);
+    border:1px solid var(--border);
+    padding:8px 14px;border-radius:14px;
+    font-size:.9rem;font-weight:700;
+    color:var(--amber);
+    position:relative;
+    min-height:36px;display:flex;align-items:center;gap:8px;
+    transition:transform .25s cubic-bezier(.34,1.56,.64,1);
+  }
+  .score-badge .badge-icon{font-size:1rem;line-height:1;}
+  .score-badge.bump{
+    transform:scale(1.1);
+  }
+  .pill-badge{
+    background:rgba(255,255,255,.04);
+    border:1px solid var(--border);
+    padding:8px 14px;border-radius:14px;
+    font-size:.82rem;font-weight:600;
+    color:var(--text);
+    min-height:36px;display:flex;align-items:center;gap:6px;
+    white-space:nowrap;
+  }
+  .pill-badge.streak-badge{color:var(--amber);}
+  .flame{
+    display:inline-block;
+    animation:flameFlicker 1.1s ease-in-out infinite;
+  }
+  @keyframes flameFlicker{
+    0%,100%{transform:scale(1) rotate(-2deg);}
+    50%{transform:scale(1.15) rotate(2deg);}
+  }
+  .points-popup{
+    position:absolute;
+    right:0;top:50%;
+    font-weight:800;font-size:1.05rem;
+    pointer-events:none;
+    white-space:nowrap;
+    animation:pointsFloat 1s ease-out forwards;
+  }
+  .points-popup.good{color:var(--green);}
+  .points-popup.bonus{color:var(--amber);}
+  @keyframes pointsFloat{
+    0%{opacity:0;transform:translate(0,-50%) translateY(6px);}
+    15%{opacity:1;transform:translate(0,-50%) translateY(-4px);}
+    75%{opacity:1;transform:translate(0,-50%) translateY(-30px);}
+    100%{opacity:0;transform:translate(0,-50%) translateY(-42px);}
+  }
+  .streak-toast{
+    position:fixed;left:50%;top:calc(18px + env(safe-area-inset-top));
+    transform:translate(-50%,-220%);
+    opacity:0;
+    background:linear-gradient(135deg,var(--amber),#a9762c);
+    color:#2a1608;font-weight:800;font-size:.95rem;
+    padding:10px 22px;border-radius:30px;
+    box-shadow:0 10px 30px rgba(217,164,65,.4);
+    z-index:50;
+    pointer-events:none;
+    transition:transform .35s cubic-bezier(.34,1.56,.64,1), opacity .35s ease;
+    display:flex;align-items:center;gap:6px;
+  }
+  .streak-toast.show{
+    transform:translate(-50%,0);
+    opacity:1;
+  }
+  /* ===== Start Screen ===== */
+  .start-screen{
+    text-align:center;
+    padding:56px 32px 52px;
+    position:relative;
+    overflow:hidden;
+  }
+  .paras{
+    position:absolute;inset:0;
+    overflow:hidden;pointer-events:none;z-index:0;
+  }
+  .para{
+    position:absolute;bottom:-50px;left:var(--x);
+    font-size:var(--s);font-weight:800;line-height:1;
+    color:var(--primary-light);opacity:0;
+    animation:paraRise var(--d) linear var(--delay) infinite;
+  }
+  @keyframes paraRise{
+    0%{transform:translateY(0) rotate(-10deg);opacity:0;}
+    15%{opacity:.22;}
+    85%{opacity:.22;}
+    100%{transform:translateY(-620px) rotate(10deg);opacity:0;}
+  }
+  .scales{
+    width:120px;height:120px;margin:0 auto 18px;display:block;
+    filter:drop-shadow(0 8px 24px rgba(0,0,0,.35));
+  }
+  .scales .stand,.scales .bar,.scales .str{
+    fill:none;stroke:var(--text);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;
+  }
+  .scales .str{stroke-width:1.3;opacity:.7;}
+  .scales .pivot{fill:var(--amber);}
+  .scales .dish-l{fill:var(--lib);}
+  .scales .dish-r{fill:var(--con);}
+  .scales .beam{transform-origin:52px 30px;animation:scalesTilt 7s ease-in-out infinite;}
+  .scales .pan-l{transform-origin:14px 30px;animation:scalesUntilt 7s ease-in-out infinite;}
+  .scales .pan-r{transform-origin:90px 30px;animation:scalesUntilt 7s ease-in-out infinite;}
+  @keyframes scalesTilt{0%,100%{transform:rotate(-7deg);}50%{transform:rotate(7deg);}}
+  @keyframes scalesUntilt{0%,100%{transform:rotate(7deg);}50%{transform:rotate(-7deg);}}
+  .start-content{position:relative;z-index:1;}
+  .start-screen .subtitle{
+    color:var(--text);font-size:1.35rem;font-weight:700;
+    line-height:1.4;max-width:460px;letter-spacing:-.01em;
+    margin:0 auto 30px;
+  }
+  .ideology-legend{
+    display:flex;align-items:center;justify-content:center;
+    flex-wrap:wrap;gap:3px 10px;
+    max-width:460px;margin:0 auto 34px;
+    font-size:1.35rem;font-weight:700;
+    line-height:1.4;letter-spacing:-.01em;
+  }
+  .legend-item{
+    font-size:inherit;font-weight:inherit;
+    display:inline-flex;align-items:center;
+  }
+  .legend-sep{
+    color:var(--muted);opacity:.45;font-weight:600;
+  }
+  .legend-lib{color:var(--lib);}
+  .legend-con{color:var(--con);}
+  .legend-soc{color:var(--soc);}
+  .btn{
+    background:var(--primary);color:#fff;
+    border:none;border-radius:12px;
+    padding:14px 32px;font-size:1.05rem;font-weight:600;
+    min-height:50px;
+    cursor:pointer;transition:transform .15s ease, box-shadow .25s ease;
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    box-shadow:0 0 15px rgba(184,58,107,.5);
+    -webkit-user-select:none;user-select:none;
+  }
+  .btn:hover{
+    transform:translateY(-2px);
+    box-shadow:0 0 25px rgba(184,58,107,.7);
+  }
+  .btn:active{
+    transform:translateY(0) scale(.97);
+  }
+  .btn-start{
+    font-size:1.1rem;padding:16px 44px;
+    border-radius:14px;
+    position:relative;
+    background:linear-gradient(135deg,var(--primary),#e58fb0);
+    box-shadow:0 0 22px rgba(184,58,107,.5);
+  }
+  .btn-start::before{
+    content:'';
+    position:absolute;inset:-4px;
+    border-radius:18px;z-index:-1;
+    border:3px solid var(--primary);
+    filter:blur(4px);
+    animation:edgePulse 2.2s ease-in-out infinite;
+  }
+  .btn-start:hover{
+    box-shadow:0 0 34px rgba(184,58,107,.8);
+  }
+  @keyframes edgePulse{
+    0%,100%{opacity:.35;transform:scale(1);}
+    50%{opacity:1;transform:scale(1.055);}
+  }
+  /* ===== Quiz Screen ===== */
+  .quiz-screen{padding:16px 32px 32px;}
+  .progress-wrap{margin-bottom:14px;}
+  .progress-bar{
+    height:8px;width:100%;background:var(--border);
+    border-radius:4px;overflow:hidden;
+  }
+  .progress-fill{
+    height:100%;background:#FFFFFF;
+    border-radius:4px;transition:width .4s ease;
+  }
+  .question-text{
+    font-size:1.35rem;font-weight:600;
+    margin-bottom:24px;line-height:1.4;
+  }
+  .answers{
+    display:grid;gap:12px;
+  }
+  .answer-btn{
+    background:rgba(255,255,255,.03);
+    border:1px solid var(--border);
+    border-radius:14px;padding:16px 20px;
+    min-height:56px;
+    font-size:1.05rem;text-align:left;cursor:pointer;
+    transition:background .15s ease, border-color .15s ease, transform .1s ease;
+    display:flex;align-items:center;gap:14px;
+    color:var(--text);
+    font-family:inherit;
+    width:100%;
+    -webkit-user-select:none;user-select:none;
+  }
+  .answer-btn:hover{
+    background:rgba(255,255,255,.06);
+    border-color:rgba(184,58,107,.3);
+  }
+  .answer-btn:active:not(:disabled){
+    transform:scale(.98);
+    background:rgba(255,255,255,.08);
+  }
+  .answer-btn.correct{
+    background:rgba(16,185,129,.1);
+    border-color:var(--green);
+  }
+  .answer-btn.wrong{
+    background:rgba(255,107,107,.15);
+    border-color:var(--redSoft);
+  }
+  .answer-btn:disabled{
+    cursor:not-allowed;
+  }
+  .answer-letter{
+    width:34px;height:34px;border-radius:50%;
+    background:rgba(184,58,107,.15);
+    display:flex;align-items:center;
+    justify-content:center;font-weight:700;
+    color:var(--primary);flex-shrink:0;
+  }
+  .answer-btn.correct .answer-letter{
+    background:var(--green);color:#fff;
+  }
+  .answer-btn.wrong .answer-letter{
+    background:var(--redSoft);color:#fff;
+  }
+  
+  .feedback-box{
+    margin-top:16px;padding:16px 20px;border-radius:12px;
+    background:rgba(255,255,255,.03);
+    border:1px solid var(--border);
+    animation:feedbackIn .25s ease;
+  }
+  @keyframes feedbackIn{
+    0%{opacity:0;transform:translateY(6px);}
+    100%{opacity:1;transform:translateY(0);}
+  }
+  .feedback-verdict{
+    font-weight:600;font-size:1.02rem;margin-bottom:8px;line-height:1.5;
+    color:var(--text);
+  }
+  .feedback-verdict .verdict-label{
+    font-weight:800;
+  }
+  .feedback-verdict.is-correct .verdict-label{color:var(--green);}
+  .feedback-verdict.is-wrong .verdict-label{color:var(--redSoft);}
+  .feedback-world{
+    font-size:.92rem;color:#e6cdd8;line-height:1.5;margin-bottom:14px;
+  }
+  .feedback-world strong{color:#fff;}
+  .today-icon{margin-right:10px;display:inline-block;}
+  .continue-btn{
+    width:100%;justify-content:center;
+    background:linear-gradient(135deg,var(--primary),#e58fb0);
+    box-shadow:0 0 15px rgba(184,58,107,.5);
+  }
+  .continue-btn:hover{
+    background:linear-gradient(135deg,var(--primary),#e58fb0);
+    box-shadow:0 0 22px rgba(184,58,107,.7);
+  }
+  /* ===== Results Screen ===== */
+  .results-screen{text-align:center;padding:50px 32px;}
+  .results-screen h2{font-size:2rem;margin-bottom:12px;}
+  .score-detail{
+    color:var(--muted);font-size:1.05rem;
+    margin-bottom:28px;line-height:1.6;
+  }
+  /* ===== K zamyšlení ===== */
+  .reflection{
+    background:rgba(44,26,38,.96);
+    border:1px solid var(--border);
+    border-radius:16px;padding:24px;
+    margin-top:24px;text-align:left;
+  }
+  .reflection h3{
+    font-size:1.2rem;margin-bottom:14px;
+    text-align:center;
+  }
+  .bonus-q{font-size:1rem;line-height:1.55;margin-bottom:14px;}
+  #bonusNote{margin-top:14px;}
+  .reflection ol{
+    margin:0;padding-left:22px;
+    display:flex;flex-direction:column;gap:12px;
+  }
+  .reflection li{
+    font-size:.98rem;line-height:1.55;
+    color:var(--text);
+  }
+  @media(max-width:600px){
+    body{padding:0;align-items:stretch;}
+    body:has(.container.on-start){padding:20px;align-items:center;}
+    .container{
+      max-width:100%;min-height:100vh;min-height:100dvh;
+      border-radius:0;border-left:none;border-right:none;
+      box-shadow:none;
+      display:flex;flex-direction:column;
+    }
+    .container.on-start{
+      border:1px solid var(--border);
+      border-radius:20px;
+      box-shadow:0 20px 60px rgba(0,0,0,.4);
+      min-height:0;
+    }
+    .header{
+      padding:calc(10px + env(safe-area-inset-top)) 18px 10px;
+      flex-shrink:0;
+    }
+    .quiz-screen{
+      padding:14px 18px calc(24px + env(safe-area-inset-bottom));
+      flex:1;
+    }
+    .question-text{font-size:clamp(1.1rem,4.5vw,1.3rem);margin-bottom:20px;}
+    .answers{gap:10px;}
+    .answer-btn{padding:15px 16px;font-size:1rem;}
+    .start-screen{
+      padding:calc(28px + env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom));
+      flex:1;display:flex;flex-direction:column;justify-content:center;
+    }
+    .start-screen .subtitle{font-size:1.1rem;}
+    .ideology-legend{font-size:1.1rem;}
+    .btn-start{width:100%;}
+    /* Continue/answer-confirmation CTA sits in normal flow, right under the feedback box */
+    .feedback-box{padding:14px 16px;}
+    .results-screen{padding:36px 20px calc(24px + env(safe-area-inset-bottom));}
+    .results-screen h2{font-size:1.6rem;}
+    .reflection{padding:20px 18px;}
+  }
+  /* Very small phones (SE-class, ~375px and under) */
+  @media(max-width:380px){
+    .answer-letter{width:30px;height:30px;font-size:.9rem;}
+  }
+</style>
+</head>
+<body>
+<div class="container on-start" id="appContainer">
+  <!-- ===== Header ===== -->
+  <div class="header" style="display:none">
+    <div id="scoreBadge" class="score-badge">
+      <span class="badge-icon">⭐</span><span id="currentScore">0</span>
+      <div id="pointsPopupHost"></div>
+    </div>
+    <div class="header-badges">
+      <div class="pill-badge"><span id="progressLabel">Otázka 1 / 20</span></div>
+      <div class="pill-badge streak-badge"><span class="flame">🔥</span><span id="streakCount">0</span></div>
+    </div>
+  </div>
+  <div id="streakToast" class="streak-toast"><span class="flame">🔥</span> <span id="streakToastText">Série 3!</span></div>
+
+  <!-- ===== Start Screen ===== -->
+  <div id="startScreen" class="start-screen">
+    <div class="paras" aria-hidden="true">
+      <span class="para" style="--x:6%;--s:34px;--d:17s;--delay:0s">§</span>
+      <span class="para" style="--x:18%;--s:22px;--d:13s;--delay:-4s">§</span>
+      <span class="para" style="--x:31%;--s:46px;--d:21s;--delay:-9s">§</span>
+      <span class="para" style="--x:47%;--s:26px;--d:15s;--delay:-2s">§</span>
+      <span class="para" style="--x:60%;--s:38px;--d:19s;--delay:-12s">§</span>
+      <span class="para" style="--x:72%;--s:20px;--d:12s;--delay:-6s">§</span>
+      <span class="para" style="--x:84%;--s:42px;--d:18s;--delay:-1s">§</span>
+      <span class="para" style="--x:93%;--s:24px;--d:14s;--delay:-8s">§</span>
+    </div>
+    <div class="start-content">
+      <svg class="scales" viewBox="0 0 104 104" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path class="stand" d="M52 30 V88 M32 92 H72"/>
+        <g class="beam">
+          <path class="bar" d="M14 30 H90"/>
+          <g class="pan pan-l">
+            <path class="str" d="M14 30 L4 60 M14 30 L24 60"/>
+            <path class="dish-l" d="M2 60 H26 A12 9 0 0 1 2 60 Z"/>
+          </g>
+          <g class="pan pan-r">
+            <path class="str" d="M90 30 L80 60 M90 30 L100 60"/>
+            <path class="dish-r" d="M78 60 H102 A12 9 0 0 1 78 60 Z"/>
+          </g>
+        </g>
+        <circle class="pivot" cx="52" cy="30" r="4"/>
+      </svg>
+      <p class="subtitle">Co sis z hodiny odnesl? Výživné, náhradní rodinná péče, partnerství a rozvod. Podobné otázky budou na testu.</p>
+
+      <button id="startBtn" class="btn btn-start">Spustit kvíz</button>
+    </div>
+  </div>
+
+  <!-- ===== Quiz Screen ===== -->
+  <div id="quizScreen" class="quiz-screen" style="display:none;">
+    <div class="progress-wrap">
+      <div class="progress-bar">
+        <div id="progressFill" class="progress-fill" style="width:0%"></div>
+      </div>
+    </div>
+    <div id="questionText" class="question-text">Otázka se načítá…</div>
+    <div id="answers" class="answers"></div>
+    <div id="feedbackBox" class="feedback-box" style="display:none;">
+      <div id="feedbackVerdict" class="feedback-verdict"></div>
+      <div id="feedbackWorld" class="feedback-world"></div>
+      <button id="continueBtn" class="btn continue-btn">Pokračovat</button>
+    </div>
+  </div>
+
+  <!-- ===== Results Screen ===== -->
+  <div id="resultsScreen" class="results-screen" style="display:none;">
+    <h2>Výsledky kvízu</h2>
+    <div class="score-detail" id="scoreDetail"></div>
+
+    <!-- ===== K zamyšlení ===== -->
+    <div class="reflection">
+      <h3>💭 K zamyšlení – pro rychlejší</h3>
+      <p class="bonus-q" id="bonusQ"></p>
+      <div class="answers" id="bonusAnswers"></div>
+      <div class="feedback-world" id="bonusNote" style="display:none"></div>
+    </div>
+  </div>
+
+  </div>
+
+<script>
+/* ===== Data: otázky k rodinnému právu ===== */
+const questions = [
+  {
+    question: "Dítě potřebuje zcela nového rodiče. Která forma náhradní rodinné péče to řeší?",
+    answers: ["Osvojení (adopce)", "Poručenství", "Pěstounská péče"],
+    correct: 0,
+    explanation: "Při osvojení se osvojitel stává plnohodnotným rodičem dítěte, takže dítě získává zcela nového rodiče.",
+    today: "📍 **V praxi:** Osvojení využívají lidé, kteří nemohou mít vlastní dítě (např. kvůli neplodnosti)."
+  },
+  {
+    question: "Je to rodič a zákonný zástupce najednou (do 18). O kterou formu náhradní rodinné péče jde?",
+    answers: ["Poručenství", "Osvojení (adopce)", "Pěstounská péče"],
+    correct: 1,
+    explanation: "Osvojitel je rodič i zákonný zástupce dítěte najednou. Dítěti přitom zanikají právní vazby na původní biologickou rodinu.",
+    today: "📍 **Rozdíl:** Osvojitel je rodič i zákonný zástupce, poručník je jen zákonný zástupce a pěstoun není ani jedno."
+  },
+  {
+    question: "Manželé nemohou mít vlastní dítě kvůli neplodnosti. Která forma jim umožní stát se rodiči?",
+    answers: ["Ústavní výchova", "Osvojení (adopce)", "Poručenství"],
+    correct: 1,
+    explanation: "Jen osvojení dělá z osvojitele rodiče i zákonného zástupce dítěte.",
+    today: "📍 **Pozor:** Pěstoun ani poručník rodičem dítěte nikdy není."
+  },
+  {
+    question: "Oba rodiče dítěte jsou ve vězení a dítě potřebuje někoho, kdo za ně bude právně jednat. Co soud nařídí?",
+    answers: ["Osvojení", "Poručenství", "Ústavní výchovu"],
+    correct: 1,
+    explanation: "Poručenství se využívá, když rodiče nemohou vykonávat odpovědnost na 100 % a dítě potřebuje právního zástupce.",
+    today: "📍 **Poručenství:** Dítě rodiče stále má, ale právní odpovědnost za ně dočasně přebírá poručník."
+  },
+  {
+    question: "Rodiče jsou nesvéprávní, například jim je teprve 16 let. Kdo bude za jejich dítě právně jednat?",
+    answers: ["Poručník", "Osvojitel", "Pěstoun"],
+    correct: 0,
+    explanation: "Nesvéprávní rodiče nemohou odpovědnost vykonávat naplno, a proto za dítě právně jedná poručník.",
+    today: "📍 **Svéprávnost:** Schopnost samostatně právně jednat nemá každý rodič automaticky, proto existuje poručenství."
+  },
+  {
+    question: "Kdo je poručník?",
+    answers: ["Rodič i zákonný zástupce dítěte", "Zákonný zástupce dítěte, ale ne rodič", "Ani zákonný zástupce, ani rodič"],
+    correct: 1,
+    explanation: "Poručník je zákonným zástupcem a přebírá právní odpovědnost za dítě místo jeho rodičů, rodičem se ale nestává.",
+    today: "📍 **Srovnání:** Osvojitel = rodič i zákonný zástupce. Poručník = zákonný zástupce. Pěstoun = ani jedno."
+  },
+  {
+    question: "Dítě má svéprávné rodiče, ale z různých důvodů (problematická rodina, náročná finanční situace rodičů) potřebuje někoho, kdo by ho finančně podporoval. O jakou péči jde?",
+    answers: ["Pěstounská péče", "Poručenství", "Osvojení"],
+    correct: 0,
+    explanation: "Při pěstounské péči rodiče zůstávají rodiči a zákonnými zástupci, dítě ale potřebuje podporu někoho dalšího. Pěstoun má nárok na dávky pěstouna.",
+    today: "📍 **Pěstounská péče:** Pěstoun nemá právo rozhodovat o důležitých věcech za dítě, rodiče zůstávají."
+  },
+  {
+    question: "Kdo rozhoduje o důležitých věcech dítěte u pěstounské péče?",
+    answers: ["Pěstoun sám o všem", "Dítě si v těchto případech rozhoduje samo", "Rodiče dítěte"],
+    correct: 2,
+    explanation: "O důležitých věcech dítěte rozhodují dál rodiče, protože zůstávají rodiči a zákonnými zástupci. Pěstoun není zákonným zástupcem ani rodičem, proto rozhoduje pouze o běžných věcech.",
+    today: "📍 **Dávky:** Dávky pěstouna jsou určeny na pokrytí péče o svěřené dítě."
+  },
+  {
+    question: "Kdo rozhoduje o tom, do kterého zařízení bude dítě při ústavní výchově umístěno?",
+    answers: ["Soud", "Škola", "Rodiče dítěte"],
+    correct: 0,
+    explanation: "Ústavní výchovu nařizuje soud a zároveň určuje zařízení, kam má být dítě umístěno.",
+    today: "📍 **Zařízení:** Jde například o diagnostické ústavy nebo dětské domovy."
+  },
+  {
+    question: "Matce se nedaří ze svého platu ušetřit nic navíc pro sebe a dítě. Otec si kupuje drahé oblečení a v létě letí na Bali. Může se matka obrátit na soud?",
+    answers: ["Ano, může žádat zvýšení výživného", "Ne, otec platí, kolik chce", "Ne, dítě musí požádat samo"],
+    correct: 0,
+    explanation: "Výživné má odpovídat potřebám dítěte i možnostem a majetkovým poměrům rodiče, a proto může matka žádat soud o zvýšení.",
+    today: "📍 **Princip:** Dítě má mít podobnou životní úroveň jako jeho rodiče."
+  },
+  {
+    question: "Rodiče si nemohou dovolit každodenní stravování a zdravotní péči. Jejich již pracující dítě je nechce finančně podporovat. Může se rodič obrátit na soud?",
+    answers: ["Ne, rodiče nemají na dítě žádné právo", "Ne, vyživovací povinnost mají jen rodiče vůči dětem", "Ano, dítě může mít vyživovací povinnost k rodičům"],
+    correct: 2,
+    explanation: "Vyživovací povinnost platí oběma směry: dospělé děti mohou být povinny podporovat rodiče, kteří jsou v nouzi.",
+    today: "📍 **Obousměrně:** O výši příspěvku případně rozhodne soud podle možností dítěte i potřeb rodiče."
+  },
+  {
+    question: "Otec každý měsíc v určený den platí alimenty. Matka chce, aby platil alimenty i na druhé, již pracující dítě. Uspěje u soudu?",
+    answers: ["Ano, rodič platí na každé dítě bez ohledu na věk", "Ne, dítě, které už pracuje a uživí se, nárok nemá", "Ano, ale jen polovinu částky"],
+    correct: 1,
+    explanation: "Vyživovací povinnost rodičů trvá jen do doby, kdy je dítě schopné samo se živit. Pracující dítě tedy nárok na výživné nemá.",
+    today: "📍 **Samostatnost:** Rozhoduje, zda se dítě už dokáže samo živit, ne jeho věk."
+  },
+  {
+    question: "Otec se zpozdil s placením alimentů a matka se rozhodla, že si tento měsíc sama určí vyšší výživné. Může to udělat?",
+    answers: ["Ano, je to přiměřená pokuta", "Ne, výši výživného určuje soud; matka může žádat dlužné alimenty", "Ano, ale jen když to otci předem oznámí"],
+    correct: 1,
+    explanation: "Výši výživného nemůže měnit jeden z rodičů sám, určuje ji soud. Zpožděné platby však může matka vymáhat soudní cestou.",
+    today: "📍 **Vymáhání:** Neplacení výživného lze řešit například exekucí."
+  },
+  {
+    question: "Co je podle novely z ledna 2025 trvalý svazek dvou osob stejného pohlaví?",
+    answers: ["Manželství", "Partnerství", "Společná domácnost"],
+    correct: 1,
+    explanation: "Od ledna 2025 se svazek dvou osob stejného pohlaví nazývá jen „partnerství“.",
+    today: "📍 **Změna:** Dříve se používal název registrované partnerství."
+  },
+  {
+    question: "Co je podle novely z ledna 2025 součástí společného jmění partnerů?",
+    answers: ["Jen to, co nabyl jeden z partnerů před partnerstvím", "Cokoliv, co nabyl jeden nebo oba partneři za trvání partnerství", "Nic, majetek je vždy oddělený"],
+    correct: 1,
+    explanation: "Do společného jmění patří to, co jeden nebo oba partneři nabyli za trvání partnerství, podobně jako u manželů.",
+    today: "📍 **Podobnost:** Postavení partnerů se v majetkových věcech přibližuje manželství."
+  },
+  {
+    question: "Co se stane po smrti jednoho z partnerů podle novely z ledna 2025?",
+    answers: ["Pozůstalý partner dědí obdobně jako manžel", "Majetek automaticky připadne státu", "Pozůstalý partner nedědí nic"],
+    correct: 0,
+    explanation: "Pozůstalý partner dědí obdobně jako manžel, což je jedna ze změn novely.",
+    today: "📍 **Dědění:** Pro pozůstalého partnera je to významná jistota."
+  },
+  {
+    question: "Která z těchto věcí JE podmínkou pro uzavření manželství v ČR?",
+    answers: ["Oba snoubenci musí mít české občanství.", "Oba snoubenci musí být stejnopohlavní páry.", "Oba snoubenci nejsou v manželství."],
+    correct: 2,
+    explanation: "Manželství může uzavřít jen ten, kdo už není v jiném manželství. České občanství se nevyžaduje a manželství v ČR uzavírají muž a žena (stejnopohlavní páry mají partnerství).",
+    today: "📍 **Obřad:** Souhlas oba snoubenci projevují před oddávajícím."
+  },
+  {
+    question: "Jiří a Vendula se chtějí rozvést. Jejich dcera Anežka (19) rozvod zásadně odmítá, oba rodiče s ním souhlasí. Co to znamená pro rozvod?",
+    answers: ["Soud rozvod zamítne, protože dítě nesouhlasí", "Rozvod musí počkat, až bude Anežce 21 let", "Nic, děti jsou plnoleté, jejich nesouhlas rozvod nezastaví"],
+    correct: 2,
+    explanation: "Anežka i Jakub jsou plnoletí a rozhodnutí o rozvodu je věcí manželů. Pokud je manželství hluboce a trvale rozvráceno a oba souhlasí, soud rozvede.",
+    today: "📍 **Nezletilé děti:** Soud by zkoumal především situaci dětí nezletilých, tady se však nevyskytují."
+  },
+  {
+    question: "Za jakých podmínek by soud rozvod Jiřího a Venduly zamítl?",
+    answers: ["Pokud by manželství nebylo hluboce a trvale rozvráceno", "Jeden z manželů s rozvodem nesouhlasí.", "Pokud by Vendula vlastnila chatu"],
+    correct: 0,
+    explanation: "Soud rozvede manželství, které je hluboce a trvale rozvráceno a nelze očekávat obnovení manželského soužití.",
+    today: "📍 **Rozvrat:** Právě tuto skutečnost soud při rozvodu zjišťuje."
+  },
+  {
+    question: "Jiří koupil za manželství auto za 2 mil. Kč, Vendula chatu za 10 mil. Kč. Kolik z majetku dostane každý z nich, když soud dělí majetek v obvyklém poměru?",
+    answers: ["Jiří 2 mil. Kč, Vendula 10 mil. Kč", "Každý po 6 mil. Kč", "Jiří 12 mil. Kč, Vendula nic"],
+    correct: 1,
+    explanation: "Majetek nabytý za manželství patří do společného jmění a běžně se dělí na poloviny, takže každý dostane hodnotu 6 mil. Kč.",
+    today: "📍 **V praxi:** Vendula si může chatu ponechat a Jiřímu vyplatit rozdíl 4 mil. Kč (Jiří má už auto za 2 mil.)."
+  }
+];
+
+/* ===== Témata a míchání pořadí otázek ===== */
+// 0-8 náhradní rodinná péče, 9-12 výživné, 13-19 manželství, partnerství a rozvod
+questions.forEach((q, i) => { q.topic = i < 9 ? 'pece' : (i < 13 ? 'vyziv' : 'rodina'); });
+let quiz = questions;
+
+// Zamíchá otázky tak, aby po sobě nešly dvě ze stejného tématu (pokud to jde)
+function mixQuestions() {
+  const pool = shuffle(questions);
+  const out = [];
+  while (pool.length) {
+    const prev = out.length ? out[out.length - 1].topic : null;
+    const counts = {};
+    pool.forEach(q => counts[q.topic] = (counts[q.topic] || 0) + 1);
+    const cands = Object.keys(counts).filter(t => t !== prev);
+    let pick;
+    if (!cands.length) {
+      pick = prev;
+    } else {
+      // téma, které by jinak zbylo na konci, musí přijít teď
+      const forced = cands.find(t => counts[t] * 2 >= pool.length + 1);
+      if (forced) pick = forced;
+      else {
+        // jinak náhodně podle toho, kolik otázek z tématu zbývá
+        let r = Math.random() * cands.reduce((sum, t) => sum + counts[t], 0);
+        pick = cands.find(t => (r -= counts[t]) < 0) || cands[0];
+      }
+    }
+    out.push(pool.splice(pool.findIndex(q => q.topic === pick), 1)[0]);
+  }
+  return out;
+}
+
+
+/* ===== Stav kvízu ===== */
+let currentQuestion = 0;
+let score = 0;
+let correctCount = 0;
+let streak = 0;
+let rpStreak = parseInt(localStorage.getItem('rpStreak')) || 0;
+let selectedAnswers = [];
+let rpScore = parseInt(localStorage.getItem('rpScore')) || 0;
+let answered = false;
+let lastCorrectIndex = null;
+
+/* ===== Bodování (Educandy styl) ===== */
+const BASE_POINTS = 10;
+const STREAK_BONUS_STEP = 5; // bonus za každý plný krok série nad 2
+function streakMultiplierBonus(currentStreak) {
+  // od 3. správné odpovědi v řadě přidáváme bonus, který roste s délkou série
+  if (currentStreak < 3) return 0;
+  return (currentStreak - 2) * STREAK_BONUS_STEP;
+}
+function showPointsPopup(text, cls) {
+  const el = document.createElement('div');
+  el.className = 'points-popup ' + cls;
+  el.textContent = text;
+  pointsPopupHost.appendChild(el);
+  setTimeout(() => el.remove(), 1000);
+}
+function bumpScoreBadge() {
+  scoreBadge.classList.remove('bump');
+  void scoreBadge.offsetWidth;
+  scoreBadge.classList.add('bump');
+  setTimeout(() => scoreBadge.classList.remove('bump'), 250);
+}
+function maybeShowStreakToast(currentStreak) {
+  if (currentStreak >= 3) {
+    streakToastText.textContent = `Série ${currentStreak}! 🔥`;
+    streakToast.classList.add('show');
+    clearTimeout(maybeShowStreakToast._t);
+    maybeShowStreakToast._t = setTimeout(() => streakToast.classList.remove('show'), 1300);
+  }
+}
+
+/* ===== DOM elementy ===== */
+const startScreen = document.getElementById('startScreen');
+const quizScreen = document.getElementById('quizScreen');
+const resultsScreen = document.getElementById('resultsScreen');
+const startBtn = document.getElementById('startBtn');
+
+const highScoreBtn = document.getElementById('highScoreBtn');
+const questionText = document.getElementById('questionText');
+const answersEl = document.getElementById('answers');
+const progressFill = document.getElementById('progressFill');
+const progressLabel = document.getElementById('progressLabel');
+const streakCountEl = document.getElementById('streakCount');
+const currentScoreEl = document.getElementById('currentScore');
+const scoreBadge = document.getElementById('scoreBadge');
+const streakToast = document.getElementById('streakToast');
+const streakToastText = document.getElementById('streakToastText');
+const pointsPopupHost = document.getElementById('pointsPopupHost');
+const scoreDetailEl = document.getElementById('scoreDetail');
+const feedbackBox = document.getElementById('feedbackBox');
+const feedbackVerdict = document.getElementById('feedbackVerdict');
+const feedbackWorld = document.getElementById('feedbackWorld');
+const continueBtn = document.getElementById('continueBtn');
+
+/* ===== Inicializace ===== */
+
+/* ===== Funkce ===== */
+function shuffle(array) {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// Převod **tučně** na <strong> pro text příkladu ze světa
+// a přidání odsazení mezi úvodní ikonu a text
+function formatBold(str) {
+  const iconMatch = str.match(/^(\S+)\s+([\s\S]*)$/);
+  let icon = '', rest = str;
+  if (iconMatch) {
+    icon = iconMatch[1];
+    rest = iconMatch[2];
+  }
+  rest = rest.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  return icon ? `<span class="today-icon">${icon}</span>${rest}` : rest;
+}
+
+function startQuiz() {
+  quiz = mixQuestions();
+  currentQuestion = 0;
+  score = 0;
+  correctCount = 0;
+  streak = 0;
+  streakCountEl.textContent = '0';
+  selectedAnswers = [];
+  answered = false;
+  lastCorrectIndex = null;
+  feedbackBox.style.display = 'none';
+  // Zobraz header při spuštění kvízu
+  document.querySelector('.header').style.display = 'flex';
+  document.getElementById('appContainer').classList.remove('on-start');
+  startScreen.style.display = 'none';
+  quizScreen.style.display = 'block';
+  resultsScreen.style.display = 'none';
+  showQuestion();
+}
+
+function showQuestion() {
+  const q = quiz[currentQuestion];
+  questionText.textContent = q.question;
+  currentScoreEl.textContent = score;
+  feedbackBox.style.display = 'none';
+
+  // Aktualizace progress baru
+  const progress = ((currentQuestion + 1) / questions.length) * 100;
+  progressFill.style.width = progress + '%';
+  progressLabel.textContent = `Otázka ${currentQuestion + 1} / ${questions.length}`;
+
+  // Zamíchání odpovědí
+  const shuffled = shuffle(q.answers);
+  // Najdeme správnou odpověď v novém pořadí
+  const correctIndex = shuffled.indexOf(q.answers[q.correct]);
+  lastCorrectIndex = correctIndex;
+
+  answersEl.innerHTML = '';
+  shuffled.forEach((answer, index) => {
+    const btn = document.createElement('button');
+    btn.className = 'answer-btn';
+    btn.innerHTML = `
+      <span class="answer-letter">${String.fromCharCode(65 + index)}</span>
+      <span>${answer}</span>
+    `;
+    btn.dataset.correct = (index === correctIndex);
+    btn.addEventListener('click', () => selectAnswer(btn));
+    answersEl.appendChild(btn);
+  });
+}
+
+function selectAnswer(btn) {
+  if (answered) return;
+  answered = true;
+
+  const allBtns = answersEl.querySelectorAll('.answer-btn');
+  allBtns.forEach(b => b.disabled = true);
+
+  const isCorrect = btn.dataset.correct === 'true';
+
+  if (isCorrect) {
+    btn.classList.add('correct');
+    correctCount++;
+    streak++;
+    streakCountEl.textContent = streak;
+    const bonus = streakMultiplierBonus(streak);
+    const gained = BASE_POINTS + bonus;
+    score += gained;
+    currentScoreEl.textContent = score;
+    bumpScoreBadge();
+    showPointsPopup(bonus > 0 ? `+${gained} (série!)` : `+${gained}`, bonus > 0 ? 'bonus' : 'good');
+    maybeShowStreakToast(streak);
+    if (streak > rpStreak) {
+      rpStreak = streak;
+      localStorage.setItem('rpStreak', rpStreak);
+    }
+  } else {
+    btn.classList.add('wrong');
+    // Označ správnou odpověď
+    allBtns[lastCorrectIndex].classList.add('correct');
+    streak = 0;
+    streakCountEl.textContent = '0';
+  }
+
+  selectedAnswers[currentQuestion] = isCorrect;
+
+  // Zpětná vazba: krátké heslo + reálný příklad ze světa, pokračování na klik
+  const q = quiz[currentQuestion];
+  if (isCorrect) {
+    feedbackVerdict.innerHTML = `<span class="verdict-label">Proč je správně:</span> ${q.explanation}`;
+  } else {
+    feedbackVerdict.innerHTML = `<span class="verdict-label">Proč je špatně:</span> ${q.explanation}`;
+  }
+  feedbackVerdict.className = 'feedback-verdict ' + (isCorrect ? 'is-correct' : 'is-wrong');
+  feedbackWorld.innerHTML = formatBold(q.today);
+  feedbackBox.style.display = 'block';
+  continueBtn.textContent = (currentQuestion < questions.length - 1) ? 'Pokračovat' : 'Zobrazit výsledky';
+  continueBtn.onclick = () => nextQuestion();
+}
+
+function nextQuestion() {
+  if (currentQuestion < questions.length - 1) {
+    currentQuestion++;
+    answered = false;
+    showQuestion();
+  } else {
+    showResults();
+  }
+}
+
+
+/* ===== Bonus pro chytré hlavy (na obrazovce s výsledky) ===== */
+const bonus = {
+  q: "Klára studuje na VOŠZ Ostrava. Babička od Kláry (její pěstounka) chce Kláře vyzvednout potvrzení o studiu na VOŠ. Referent SZŠ a VOŠZ ho může vydávat pouze zákonným zástupcům. Jak to dopadne?",
+  a: ["Vyzvedne, protože babička je pěstounka.", "Potvrzení o studiu lze vydat rodičům Kláry.", "Ne, potvrzení může dostat jen Klára.", "Ne, z popisu plyne, že jiné osobě než konkrétnímu studentovi se nemůže potvrzení vydat."],
+  c: 2,
+  note: "Pěstounka není zákonným zástupcem, a proto potvrzení nezíská. Dostat ho může jen Klára."
+};
+function buildBonus() {
+  document.getElementById('bonusQ').innerHTML = '<u><strong>BONUS pro chytré hlavy:</strong></u> ' + bonus.q;
+  const box = document.getElementById('bonusAnswers');
+  const note = document.getElementById('bonusNote');
+  box.innerHTML = '';
+  note.style.display = 'none';
+  bonus.a.forEach((text, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'answer-btn';
+    btn.innerHTML = '<span class="answer-letter">' + String.fromCharCode(65 + i) + '</span><span></span>';
+    btn.lastChild.textContent = text;
+    btn.addEventListener('click', () => {
+      const all = box.querySelectorAll('.answer-btn');
+      all.forEach(b => b.disabled = true);
+      all[bonus.c].classList.add('correct');
+      if (i !== bonus.c) btn.classList.add('wrong');
+      note.textContent = bonus.note;
+      note.style.display = 'block';
+    });
+    box.appendChild(btn);
+  });
+}
+
+function showResults() {
+  buildBonus();
+  quizScreen.style.display = 'none';
+  resultsScreen.style.display = 'block';
+  scoreDetailEl.textContent = `Správně: ${correctCount} / ${questions.length} · nejdelší série: ${rpStreak}🔥`;
+}
+
+function showHighScore() {
+  alert(`Tvé nejlepší skóre: ${rpScore} bodů · nejdelší série: ${rpStreak}🔥`);
+}
+
+/* ===== Event listeners ===== */
+startBtn.addEventListener('click', startQuiz);
+if (highScoreBtn) {
+  highScoreBtn.addEventListener('click', showHighScore);
+}
+</script>
+</body>
+</html>
